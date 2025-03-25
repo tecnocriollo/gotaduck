@@ -26,25 +26,29 @@ go get github.com/tecnocriollo/gotaduck
 package main
 
 import (
-	"fmt"
-	"github.com/marcboeker/go-duckdb"
-	"github.com/go-gota/gota/dataframe"
+	"database/sql"
+	"log"
+
+	_ "github.com/marcboeker/go-duckdb"
+	"github.com/tecnocriollo/gotaduck"
 )
 
 func main() {
-	// Example: Connect to DuckDB and load data into a Gota dataframe
-	conn, _ := duckdb.Open("")
-	defer conn.Close()
+	db, err := sql.Open("duckdb", "")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
 
-	// Execute a query
-	rows, _ := conn.Query("SELECT * FROM my_table")
+	df, err := gotaduck.QueryToDataFrame(db, `SELECT id, name FROM 'people.csv'`)
+	if err != nil {
+		log.Fatal(err)
+	}
+	// Print the DataFrame
+	log.Println(df)
 
-	// Convert rows to a Gota dataframe (implementation provided by Gotaduck)
-	df := gotaduck.RowsToDataFrame(rows)
-
-	// Print the dataframe
-	fmt.Println(df)
 }
+
 ```
 
 ## License

@@ -1,14 +1,11 @@
-package main
+package gotaduck
 
 import (
 	"database/sql"
 	"fmt"
-	"log"
 
 	"github.com/go-gota/gota/dataframe"
 	"github.com/go-gota/gota/series"
-
-	_ "github.com/marcboeker/go-duckdb"
 )
 
 func QueryToDataFrame(db *sql.DB, query string) (dataframe.DataFrame, error) {
@@ -28,6 +25,10 @@ func QueryToDataFrame(db *sql.DB, query string) (dataframe.DataFrame, error) {
 	columnPointers := make([]interface{}, len(columns))
 	for i, col := range columns {
 		switch col.DatabaseTypeName() {
+		case "BIGINT":
+			var intValue int
+			columnPointers[i] = &intValue
+			columnValues[i] = intValue
 		case "INTEGER":
 			var intValue int
 			columnPointers[i] = &intValue
@@ -61,6 +62,8 @@ func QueryToDataFrame(db *sql.DB, query string) (dataframe.DataFrame, error) {
 	data := make(map[string]interface{})
 	for _, col := range columns {
 		switch col.DatabaseTypeName() {
+		case "BIGINT":
+			data[col.Name()] = []int{}
 		case "INTEGER":
 			data[col.Name()] = []int{}
 		case "VARCHAR":
@@ -83,6 +86,8 @@ func QueryToDataFrame(db *sql.DB, query string) (dataframe.DataFrame, error) {
 		// Append values to the appropriate slices based on column order
 		for i, col := range columns {
 			switch col.DatabaseTypeName() {
+			case "BIGINT":
+				data[col.Name()] = append(data[col.Name()].([]int), *columnPointers[i].(*int))
 			case "INTEGER":
 				data[col.Name()] = append(data[col.Name()].([]int), *columnPointers[i].(*int))
 			case "VARCHAR":
@@ -113,40 +118,4 @@ func QueryToDataFrame(db *sql.DB, query string) (dataframe.DataFrame, error) {
 	}
 
 	return dataframe.New(seriesList...), nil
-}
-
-func main() {
-	db, err := sql.Open("duckdb", "")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
-
-	_, err = db.Exec(`CREATE TABLE people (id INTEGER, name VARCHAR)`)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	_, err = db.Exec(`INSERT INTO people VALUES (42, 'John')`)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	_, err = db.Exec(`INSERT INTO people VALUES (41, 'Paul')`)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	_, err = db.Exec(`INSERT INTO people VALUES (40, 'Michael')`)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	df, err := QueryToDataFrame(db, `SELECT 'dummy' as dummy, TIMESTAMP '2024-03-03' as mydate, id, name FROM people`)
-	if err != nil {
-		log.Fatal(err)
-	}
-	// Print the DataFrame
-	log.Println(df)
-
 }
