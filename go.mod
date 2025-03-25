@@ -1,4 +1,4 @@
-module tecnocriollo/gotaduck
+module github.com/tecnocriollo/gotaduck
 
 go 1.24.1
 
