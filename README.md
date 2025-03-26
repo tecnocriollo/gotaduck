@@ -35,43 +35,6 @@ When converting DuckDB query results to Gota DataFrames, the following SQL types
 
 Note: DATE and TIMESTAMP types are converted to strings using RFC3339 format.
 
-## Example Usage
-
-```go
-package main
-
-import (
-    "database/sql"
-    "log"
-    
-    "github.com/tecnocriollo/gotaduck"
-    _ "github.com/marcboeker/go-duckdb"
-)
-
-func main() {
-    // Open DuckDB connection
-    db, err := sql.Open("duckdb", "")
-    if err != nil {
-        log.Fatal(err)
-    }
-    defer db.Close()
-
-    // Query with different types
-    df, err := gotaduck.QueryToDataFrame(db, `
-        SELECT 
-            CAST(1 AS INTEGER) as int_col,
-            CAST(2.5 AS DOUBLE) as double_col,
-            'text' as string_col,
-            TRUE as bool_col,
-            TIMESTAMP '2024-03-26 12:00:00' as timestamp_col
-    `)
-    if err != nil {
-        log.Fatal(err)
-    }
-    
-    log.Println(df)
-}
-```
 
 ## Examples
 
