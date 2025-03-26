@@ -1,6 +1,6 @@
 # Gotaduck
 
-Gotaduck is a Go library designed to facilitate the seamless integration of DuckDB data with Gota dataframes. It provides an easy-to-use interface for reading data from DuckDB and converting it into Gota dataframes for further analysis and manipulation.
+A Go package that provides integration between DuckDB and Gota DataFrames.
 
 ## Features
 
@@ -14,11 +14,26 @@ Gotaduck is ideal for developers and data scientists who work with DuckDB for da
 
 ## Installation
 
-To install Gotaduck, use:
-
 ```bash
 go get github.com/tecnocriollo/gotaduck
 ```
+
+## Supported Types
+
+When converting DuckDB query results to Gota DataFrames, the following SQL types are supported:
+
+| DuckDB Type | Go Type   | Gota Series Type |
+|-------------|-----------|------------------|
+| INTEGER     | int32     | series.Int      |
+| BIGINT      | int64     | series.Int      |
+| REAL        | float32   | series.Float    |
+| DOUBLE      | float64   | series.Float    |
+| VARCHAR     | string    | series.String   |
+| BOOLEAN     | bool      | series.Bool     |
+| DATE        | time.Time | series.String   |
+| TIMESTAMP   | time.Time | series.String   |
+
+Note: DATE and TIMESTAMP types are converted to strings using RFC3339 format.
 
 ## Example Usage
 
@@ -26,43 +41,89 @@ go get github.com/tecnocriollo/gotaduck
 package main
 
 import (
-	"database/sql"
-	"log"
-
-	"github.com/go-gota/gota/dataframe"
-	"github.com/go-gota/gota/series"
-	_ "github.com/marcboeker/go-duckdb"
-	"github.com/tecnocriollo/gotaduck"
+    "database/sql"
+    "log"
+    
+    "github.com/tecnocriollo/gotaduck"
+    _ "github.com/marcboeker/go-duckdb"
 )
 
 func main() {
-	db, err := sql.Open("duckdb", "")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
+    // Open DuckDB connection
+    db, err := sql.Open("duckdb", "")
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer db.Close()
 
-	df, err := gotaduck.QueryToDataFrame(db, `SELECT TIMESTAMP '2025-03-03' as date, id, name FROM 'people.csv'`)
-	if err != nil {
-		log.Fatal(err)
-	}
-	// Print the DataFrame
-	log.Println(df)
+    // Query with different types
+    df, err := gotaduck.QueryToDataFrame(db, `
+        SELECT 
+            CAST(1 AS INTEGER) as int_col,
+            CAST(2.5 AS DOUBLE) as double_col,
+            'text' as string_col,
+            TRUE as bool_col,
+            TIMESTAMP '2024-03-26 12:00:00' as timestamp_col
+    `)
+    if err != nil {
+        log.Fatal(err)
+    }
+    
+    log.Println(df)
+}
+```
 
-	df_products := dataframe.New(
-		series.New([]int{1001, 1002, 1003}, series.Int, "sku"),
-		series.New([]float64{29.99, 15.50, 45.75}, series.Float, "price"),
-		series.New([]int{100, 50, 75}, series.Int, "quantity"),
-		series.New([]float64{0.30, 0.31, 0.61}, series.Float, "unit_price"),
-	)
-	gotaduck.DataFrameToTable(db, df_products, `products`)
+## Examples
 
-	log.Println(gotaduck.QueryToDataFrame(db, `SELECT * FROM products`))
-	log.Println(gotaduck.QueryToDataFrame(db, `SELECT max(price) FROM products`))
+### Query to DataFrame
+```go
+df, err := gotaduck.QueryToDataFrame(db, `
+    SELECT 
+        CAST(1 AS INTEGER) as int_col,
+        CAST(2.5 AS DOUBLE) as double_col,
+        'text' as string_col,
+        TRUE as bool_col,
+        TIMESTAMP '2024-03-26 12:00:00' as timestamp_col
+`)
+```
 
+### DataFrame to DuckDB Table
+```go
+// Create a sample DataFrame
+df := dataframe.New(
+    series.New([]int{1001, 1002, 1003}, series.Int, "product_id"),
+    series.New([]string{"Laptop", "Mouse", "Keyboard"}, series.String, "name"),
+    series.New([]float64{999.99, 25.50, 89.99}, series.Float, "price"),
+    series.New([]bool{true, false, true}, series.Bool, "in_stock"),
+)
+
+// Save DataFrame to DuckDB table
+err := gotaduck.DataFrameToTable(db, df, "products")
+if err != nil {
+    log.Fatal(err)
 }
 
+// Verify the data
+result, err := gotaduck.QueryToDataFrame(db, "SELECT * FROM products")
+if err != nil {
+    log.Fatal(err)
+}
+fmt.Println(result)
+
+// Output:
+//    product_id     name  price in_stock
+// 0       1001   Laptop 999.99     true
+// 1       1002    Mouse  25.50    false
+// 2       1003 Keyboard  89.99     true
 ```
+
+The `DataFrameToTable` function:
+- Automatically creates a table with appropriate column types
+- Supports INTEGER, REAL, TEXT, and BOOLEAN columns
+- Handles batch insertions efficiently
+- Preserves column names from the DataFrame
+
+For more examples, check the `examples/demo` directory.
 
 ## License
 
