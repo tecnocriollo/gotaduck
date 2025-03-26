@@ -15,7 +15,7 @@ func main() {
 	}
 	defer db.Close()
 
-	df, err := gotaduck.QueryToDataFrame(db, `SELECT id, name FROM 'people.csv'`)
+	df, err := gotaduck.QueryToDataFrame(db, `SELECT TIMESTAMP '2025-03-03' as date, id, name FROM 'people.csv'`)
 	if err != nil {
 		log.Fatal(err)
 	}
