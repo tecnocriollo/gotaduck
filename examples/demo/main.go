@@ -32,10 +32,7 @@ func main() {
 	)
 	gotaduck.DataFrameToTable(db, df_products, `products`)
 
-	df2, err := gotaduck.QueryToDataFrame(db, `SELECT max(price) FROM products`)
-	if err != nil {
-		log.Fatal(err)
-	}
-	// Print the DataFrame
-	log.Println(df2)
+	log.Println(gotaduck.QueryToDataFrame(db, `SELECT * FROM products`))
+	log.Println(gotaduck.QueryToDataFrame(db, `SELECT max(price) FROM products`))
+
 }
