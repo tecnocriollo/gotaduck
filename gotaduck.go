@@ -2,6 +2,8 @@ package gotaduck
 
 import (
 	"database/sql"
+	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/go-gota/gota/dataframe"
@@ -9,7 +11,25 @@ import (
 	"github.com/tecnocriollo/gotaduck/internal/columndata"
 )
 
+// Error definitions
+var ErrNotDuckDBConnection = errors.New("not a DuckDB connection")
+
+// isDuckDBConnection checks if the provided database connection is a DuckDB connection
+func isDuckDBConnection(db *sql.DB) bool {
+	if db == nil {
+		return false
+	}
+
+	// Check if the driver type contains "duckdb"
+	driverType := fmt.Sprintf("%T", db.Driver())
+	return strings.Contains(strings.ToLower(driverType), "duckdb")
+}
+
 func QueryToDataFrame(db *sql.DB, query string) (dataframe.DataFrame, error) {
+	if !isDuckDBConnection(db) {
+		return dataframe.DataFrame{}, ErrNotDuckDBConnection
+	}
+
 	rows, err := db.Query(query)
 	if err != nil {
 		return dataframe.DataFrame{}, err
@@ -57,6 +77,10 @@ func QueryToDataFrame(db *sql.DB, query string) (dataframe.DataFrame, error) {
 }
 
 func DataFrameToTable(db *sql.DB, df dataframe.DataFrame, tableName string) error {
+	if !isDuckDBConnection(db) {
+		return ErrNotDuckDBConnection
+	}
+
 	// Create table based on DataFrame structure
 	createQuery := generateCreateTableSQL(df, tableName)
 	_, err := db.Exec(createQuery)
