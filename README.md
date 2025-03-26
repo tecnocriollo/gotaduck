@@ -10,7 +10,7 @@ A Go package that provides integration between DuckDB and Gota DataFrames.
 
 ## Use Case
 
-Gotaduck is ideal for developers and data scientists who work with DuckDB for data storage and Gota for data manipulation in Go. It bridges the gap between these two powerful tools, enabling efficient data workflows.
+Gotaduck is ideal for developers, data engineers and data scientists who work with DuckDB for data storage and Gota for data manipulation in Go. It bridges the gap between these two powerful tools, enabling efficient data workflows.
 
 ## Installation
 
