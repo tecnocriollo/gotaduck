@@ -53,7 +53,7 @@ func CreateSeries(col ColumnData) (series.Series, error) {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		return convertIntegerSeries(col)
 	case reflect.Float32, reflect.Float64:
-		return series.New(col.Data.([]float64), series.Float, col.Name), nil
+		return convertFloatSeries(col)
 	case reflect.String:
 		return series.New(col.Data.([]string), series.String, col.Name), nil
 	case reflect.Bool:
@@ -70,12 +70,47 @@ func CreateSeries(col ColumnData) (series.Series, error) {
 
 // private helper functions
 func convertIntegerSeries(col ColumnData) (series.Series, error) {
-	intSlice := col.Data.([]int64)
-	intValues := make([]int, len(intSlice))
-	for i, v := range intSlice {
-		intValues[i] = int(v)
+	colValue := reflect.ValueOf(col.Data)
+	elemType := colValue.Type().Elem()
+
+	switch elemType.Kind() {
+	case reflect.Int32:
+		int32Slice := col.Data.([]int32)
+		intValues := make([]int, len(int32Slice))
+		for i, v := range int32Slice {
+			intValues[i] = int(v)
+		}
+		return series.New(intValues, series.Int, col.Name), nil
+	case reflect.Int64:
+		int64Slice := col.Data.([]int64)
+		intValues := make([]int, len(int64Slice))
+		for i, v := range int64Slice {
+			intValues[i] = int(v)
+		}
+		return series.New(intValues, series.Int, col.Name), nil
+	default:
+		// Handle other integer types if needed
+		return series.Series{}, fmt.Errorf("unsupported integer type for column %s: %v", col.Name, elemType)
 	}
-	return series.New(intValues, series.Int, col.Name), nil
+}
+
+func convertFloatSeries(col ColumnData) (series.Series, error) {
+	colValue := reflect.ValueOf(col.Data)
+	elemType := colValue.Type().Elem()
+
+	switch elemType.Kind() {
+	case reflect.Float32:
+		float32Slice := col.Data.([]float32)
+		floatValues := make([]float64, len(float32Slice))
+		for i, v := range float32Slice {
+			floatValues[i] = float64(v)
+		}
+		return series.New(floatValues, series.Float, col.Name), nil
+	case reflect.Float64:
+		return series.New(col.Data.([]float64), series.Float, col.Name), nil
+	default:
+		return series.Series{}, fmt.Errorf("unsupported float type for column %s: %v", col.Name, elemType)
+	}
 }
 
 func convertTimeSeries(col ColumnData) (series.Series, error) {
