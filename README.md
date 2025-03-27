@@ -1,6 +1,9 @@
 # Gotaduck
 
-A Go package that provides integration between DuckDB and Gota DataFrames.
+A Go package that provides integration between DuckDB and Gota DataFrames. 
+
+WARNING:
+This version it's not prepared to used in production environments. I hope in the future wil be.
 
 ## Features
 
