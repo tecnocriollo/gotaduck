@@ -30,7 +30,14 @@ func QueryToDataFrame(db *sql.DB, query string) (dataframe.DataFrame, error) {
 		return dataframe.DataFrame{}, ErrNotDuckDBConnection
 	}
 
-	rows, err := db.Query(query)
+	// Create a prepared statement to prevent SQL injection
+	stmt, err := db.Prepare(query)
+	if err != nil {
+		return dataframe.DataFrame{}, err
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query()
 	if err != nil {
 		return dataframe.DataFrame{}, err
 	}
@@ -99,7 +106,9 @@ func DataFrameToTable(db *sql.DB, df dataframe.DataFrame, tableName string) erro
 	for i := range placeholders {
 		placeholders[i] = "?"
 	}
-	insertSQL := "INSERT INTO " + tableName + " VALUES (" + strings.Join(placeholders, ", ") + ")"
+	insertSQL := fmt.Sprintf("INSERT INTO \"%s\" VALUES (%s)",
+		strings.ReplaceAll(tableName, "\"", "\"\""),
+		strings.Join(placeholders, ", "))
 	stmt, err := db.Prepare(insertSQL)
 	if err != nil {
 		return err
